@@ -8,3 +8,7 @@ spring:
   h2:
     console:
       enabled: true
+url:
+  nbp: http://api.nbp.pl/api/exchangerates/tables/
+cron:
+  currency: 0 0 0/6 ? * *
