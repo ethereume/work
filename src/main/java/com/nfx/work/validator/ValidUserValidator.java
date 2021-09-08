@@ -12,25 +12,32 @@ public class ValidUserValidator implements ConstraintValidator<ValidUser, Regist
 
     private static final String USER_NOT_ADULT = "User is not adult";
     private static final String EMPTY_FIELDS = "Fields cannot be empty";
+    private static final String PESEL_TOO_SHORT = "This is not a pesel";
 
     @Override
     public boolean isValid(RegisterUser value, ConstraintValidatorContext context) {
+        context.disableDefaultConstraintViolation();
         if(StringUtils.isBlank(value.getName()) ||
                 StringUtils.isBlank(value.getSurname()) ||
                 StringUtils.isBlank(value.getPesel()) ||
                 Objects.isNull(value.getMoney())) {
-            context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(EMPTY_FIELDS).addConstraintViolation();
             return false;
         }
-        Integer yearOfBirthday = Integer.parseInt("20"+value.getPesel().substring(0,2));
-        Integer yearType = Integer.parseInt(value.getPesel().substring(2,3));
+
+        if(value.getPesel().length() != 11 ) {
+            context.buildConstraintViolationWithTemplate(PESEL_TOO_SHORT).addConstraintViolation();
+            return false;
+        }
+
+        int yearOfBirthday = Integer.parseInt("20"+value.getPesel().substring(0,2));
+        int yearType = Integer.parseInt(value.getPesel().substring(2,3));
         int year = LocalDate.now().getYear();
-        if(yearType == 2 && (year - yearOfBirthday < 18)) {
-            context.disableDefaultConstraintViolation();
+        if(yearType > 1 && (year - yearOfBirthday < 18)) {
             context.buildConstraintViolationWithTemplate(USER_NOT_ADULT).addConstraintViolation();
             return false;
         }
+
         return true;
     }
 }

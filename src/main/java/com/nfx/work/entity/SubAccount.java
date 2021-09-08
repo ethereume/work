@@ -9,6 +9,7 @@ import lombok.experimental.Accessors;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.math.BigDecimal;
 
 @Entity
 @AllArgsConstructor
@@ -26,6 +27,10 @@ public class SubAccount {
     @NotNull
     @Size(max = 3)
     private String currency;
+
+    @NotNull
+    @Column(name = "MONEY")
+    private BigDecimal startMoney;
 
     @ManyToOne(cascade = {
             CascadeType.REFRESH,

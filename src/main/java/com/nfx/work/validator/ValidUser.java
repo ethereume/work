@@ -12,7 +12,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface ValidUser {
 
-    Class<?>[] groups()default {};
+    String message() default "";
+
+    Class<?>[] groups() default {};
 
     Class<? extends Payload>[] payload() default {};
 }

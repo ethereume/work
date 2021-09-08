@@ -1,22 +1,26 @@
 package com.nfx.work.mapper;
 
 import com.nfx.work.entity.SubAccount;
+import com.nfx.work.frontdto.AccountDto;
 import com.nfx.work.frontdto.RegisterUser;
 import com.nfx.work.frontdto.RegisterUserDto;
 import com.nfx.work.entity.Account;
 import com.nfx.work.entity.User;
+import com.nfx.work.frontdto.SubAccountDto;
 import com.nfx.work.service.NbpService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class UserMapper {
+public class ApplicationMapper {
 
     private final NbpService nbpService;
     private final List<String> ibans =  Arrays.asList(
@@ -39,16 +43,29 @@ public class UserMapper {
     );
 
     public User map(RegisterUser registerUser) {
-
         return new User()
                 .setName(registerUser.getName())
                 .setSurname(registerUser.getSurname())
-                .setPesel(registerUser.getPesel())
-                .setAccount(new Account()
-                        .setCurrency("PLN")
-                        .setIban(generateIban())
-                        .setSubAccounts(generateSubAccounts())
-                        .setStartMoney(registerUser.getMoney()));
+                .setPesel(registerUser.getPesel());
+    }
+
+    public Account map(User user, BigDecimal money) {
+        return new Account()
+                .setUser(user)
+                .setCurrency("PLN")
+                .setIban(generateIban())
+                .setStartMoney(money);
+    }
+
+    public List<SubAccount> generateSubAccounts(Account account) {
+        return nbpService.getCurrency()
+                .keySet()
+                .stream()
+                .map(it -> new SubAccount()
+                        .setAccount(account)
+                        .setStartMoney(BigDecimal.ZERO)
+                        .setCurrency(it))
+                .collect(Collectors.toList());
     }
 
     public RegisterUserDto map(User user,String message,boolean created) {
@@ -59,16 +76,25 @@ public class UserMapper {
                 .setCreated(created);
     }
 
+    public AccountDto map(Account account) {
+        return new AccountDto()
+                .setIban(account.getIban())
+                .setMoney(account.getStartMoney())
+                .setCurrency(account.getCurrency())
+                .setUser(account.getUser().getName())
+                .setSurname(account.getUser().getSurname())
+                .setAccounts(account.getSubAccounts()
+                        .stream()
+                        .map(it -> new SubAccountDto()
+                                .setCurrency(it.getCurrency())
+                                .setMoney(it.getStartMoney())
+                                .setMoney(it.getStartMoney()))
+                        .sorted(Comparator.comparing(SubAccountDto::getCurrency))
+                        .collect(Collectors.toList()));
+    }
+
     private String generateIban() {
         Collections.shuffle(ibans);
         return ibans.get(0);
-    }
-
-    private List<SubAccount> generateSubAccounts() {
-        return nbpService.getCurrency()
-                .keySet()
-                .stream()
-                .map(it -> new SubAccount().setCurrency(it))
-                .collect(Collectors.toList());
     }
 }
