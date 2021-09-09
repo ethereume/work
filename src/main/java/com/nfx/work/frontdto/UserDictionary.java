@@ -15,4 +15,5 @@ import java.util.List;
 @ValidUser
 public class UserDictionary {
     private List<String> currency;
+    private List<String> pesels;
 }

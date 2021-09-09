@@ -14,9 +14,8 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,7 +41,8 @@ public class UserService {
 
     public UserDictionary getDictionary() {
         return new UserDictionary()
-                .setCurrency(nbpService.getCurrency().keySet().stream().sorted().collect(Collectors.toList()));
+                .setCurrency(nbpService.getCurrency().keySet().stream().sorted().collect(Collectors.toList()))
+                .setPesels(userRepository.findAll().stream().map(User::getPesel).collect(Collectors.toList()));
     }
 
     @Transactional
@@ -52,12 +52,12 @@ public class UserService {
             throw new RuntimeException("Parameter must be set");
         }
         Account account = user.getAccount();
-        BigDecimal newMoney = BigDecimal.ZERO;
-        BigDecimal newMoneyTo = BigDecimal.ZERO;
+        BigDecimal newMoney;
+        BigDecimal newMoneyTo;
         if(exchange.getCurrencyFrom().equals("PLN")) {
             SubAccount subAccount = user.getAccount().getSubAccounts()
                     .stream()
-                    .filter(it -> exchange.getCurrencyTo().toLowerCase().equals(it.getCurrency().toLowerCase()))
+                    .filter(it -> exchange.getCurrencyTo().toUpperCase().equals(it.getCurrency()))
                     .findAny()
                     .orElseThrow(() -> new RuntimeException("There is no account with this currency " + exchange.getCurrencyTo()));
             BigDecimal toExchange = exchange.getMoney().multiply(nbpService.getCurrency().get(exchange.getCurrencyTo()).getBid());
@@ -69,26 +69,28 @@ public class UserService {
             accountRepository.saveAndFlush(account.setStartMoney(newMoney));
             subAccountRepository.saveAndFlush(subAccount.setStartMoney(newMoneyTo));
         } else {
-            SubAccount accountFrom = user.getAccount().getSubAccounts()
+            Map<String, SubAccount> subAccounts = account.getSubAccounts()
                     .stream()
-                    .filter(it -> exchange.getCurrencyFrom().equalsIgnoreCase(it.getCurrency()))
-                    .findAny()
-                    .orElseThrow(() -> new RuntimeException("There is no account with this currency " + exchange.getCurrencyTo()));
-            SubAccount accountTo = user.getAccount().getSubAccounts()
-                    .stream()
-                    .filter(it -> exchange.getCurrencyTo().equalsIgnoreCase(it.getCurrency()))
-                    .findAny()
-                    .orElseThrow(() -> new RuntimeException("There is no account with this currency " + exchange.getCurrencyTo()));
+                    .collect(Collectors.toMap((SubAccount::getCurrency), Function.identity()));
+            SubAccount accountFrom = Optional.ofNullable(subAccounts.get(exchange.getCurrencyFrom().toUpperCase())).orElseThrow(() -> new RuntimeException("There is no account with this currency " + exchange.getCurrencyFrom()));
+            SubAccount accountTo;
             BigDecimal toExchange = exchange.getMoney().multiply(nbpService.getCurrency().get(exchange.getCurrencyTo()).getBid());
             if(accountFrom.getStartMoney().subtract(toExchange).compareTo(BigDecimal.ZERO) <= 0 ) {
                 throw new RuntimeException("Not enough money");
             }
+            if(exchange.getCurrencyTo().equals("PLN")) {
+                newMoneyTo = account.getStartMoney().add(toExchange);
+                account.setStartMoney(newMoneyTo);
+                accountRepository.saveAndFlush(account);
+            } else {
+                accountTo = Optional.ofNullable(subAccounts.get(exchange.getCurrencyTo().toUpperCase())).orElseThrow(() -> new RuntimeException("There is no account with this currency " + exchange.getCurrencyTo()));
+                newMoneyTo = accountTo.getStartMoney().add(toExchange);
+                accountTo.setStartMoney(newMoneyTo);
+                subAccountRepository.saveAndFlush(accountTo);
+            }
             newMoney = accountFrom.getStartMoney().subtract(toExchange);
-            newMoneyTo = accountTo.getStartMoney().add(toExchange);
-            accountFrom.setStartMoney(newMoney);
-            accountTo.setStartMoney(newMoneyTo);
-            subAccountRepository.saveAll(Arrays.asList(accountTo,accountFrom));
-            subAccountRepository.flush();
+            accountFrom.setStartMoney(newMoney);;
+            subAccountRepository.saveAndFlush(accountFrom);
         }
         return new ExchangeResponseDto()
                 .setCurrencyFrom(exchange.getCurrencyFrom())
