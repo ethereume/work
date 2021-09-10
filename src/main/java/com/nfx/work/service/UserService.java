@@ -42,7 +42,7 @@ public class UserService {
     public UserDictionary getDictionary() {
         return new UserDictionary()
                 .setCurrency(nbpService.getCurrency().keySet().stream().sorted().collect(Collectors.toList()))
-                .setPesels(userRepository.findAll().stream().map(User::getPesel).collect(Collectors.toList()));
+                .setUsers(userRepository.findAll().stream().map(mapper::map).collect(Collectors.toList()));
     }
 
     @Transactional
@@ -50,6 +50,9 @@ public class UserService {
         User user = userRepository.findByPesel(exchange.getPesel()).orElseThrow(() -> new RuntimeException("User not exists in databases"));
         if(StringUtils.isBlank(exchange.getCurrencyFrom()) || StringUtils.isBlank(exchange.getCurrencyTo()) || Objects.isNull(exchange.getMoney())) {
             throw new RuntimeException("Parameter must be set");
+        }
+        if(exchange.getCurrencyFrom().equalsIgnoreCase(exchange.getCurrencyTo())) {
+            throw new RuntimeException("You cannot do that");
         }
         Account account = user.getAccount();
         BigDecimal newMoney;

@@ -1,12 +1,9 @@
 package com.nfx.work.mapper;
 
 import com.nfx.work.entity.SubAccount;
-import com.nfx.work.frontdto.AccountDto;
-import com.nfx.work.frontdto.RegisterUser;
-import com.nfx.work.frontdto.RegisterUserDto;
+import com.nfx.work.frontdto.*;
 import com.nfx.work.entity.Account;
 import com.nfx.work.entity.User;
-import com.nfx.work.frontdto.SubAccountDto;
 import com.nfx.work.service.NbpService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -74,6 +71,13 @@ public class ApplicationMapper {
                 .setSurname(user.getSurname())
                 .setMessage(message)
                 .setCreated(created);
+    }
+
+    public UserDto map(User e) {
+        return new UserDto()
+                .setFullName(e.getName() + " "+ e.getSurname())
+                .setIban(e.getAccount().getIban())
+                .setPesel(e.getPesel());
     }
 
     public AccountDto map(Account account) {

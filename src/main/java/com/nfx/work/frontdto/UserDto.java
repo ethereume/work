@@ -6,14 +6,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import java.util.List;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @Accessors(chain = true)
 @ValidUser
-public class UserDictionary {
-    private List<String> currency;
-    private List<UserDto> users;
+public class UserDto {
+    private String fullName;
+    private String pesel;
+    private String iban;
 }
