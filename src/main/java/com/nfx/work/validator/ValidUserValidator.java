@@ -13,6 +13,7 @@ public class ValidUserValidator implements ConstraintValidator<ValidUser, Regist
     private static final String USER_NOT_ADULT = "User is not adult";
     private static final String EMPTY_FIELDS = "Fields cannot be empty";
     private static final String PESEL_TOO_SHORT = "This is not a pesel";
+    private static final String NOT_VALUE_DATE = "This date is not valid";
 
     @Override
     public boolean isValid(RegisterUser value, ConstraintValidatorContext context) {
@@ -30,10 +31,22 @@ public class ValidUserValidator implements ConstraintValidator<ValidUser, Regist
             return false;
         }
 
-        int yearOfBirthday = Integer.parseInt("20"+value.getPesel().substring(0,2));
+        int mouth = Integer.parseInt(value.getPesel().substring(2,4));
+        int day = Integer.parseInt(value.getPesel().substring(4,6));
         int yearType = Integer.parseInt(value.getPesel().substring(2,3));
-        int year = LocalDate.now().getYear();
-        if(yearType > 1 && (year - yearOfBirthday < 18)) {
+        int yearOfBirthday = Integer.parseInt((yearType> 1 ? "20" : "19") + value.getPesel().substring(0,2));
+        int currentYear = LocalDate.now().getYear();
+        try {
+            if(yearType > 1) {
+                LocalDate.of(yearOfBirthday,mouth-20,day);
+            } else {
+                LocalDate.of(yearOfBirthday,mouth,day);
+            }
+        } catch (Exception e) {
+            context.buildConstraintViolationWithTemplate(NOT_VALUE_DATE).addConstraintViolation();
+            return false;
+        }
+        if(yearType > 1 && (currentYear - yearOfBirthday < 18)) {
             context.buildConstraintViolationWithTemplate(USER_NOT_ADULT).addConstraintViolation();
             return false;
         }
