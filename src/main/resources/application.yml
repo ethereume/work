@@ -8,6 +8,11 @@ spring:
   h2:
     console:
       enabled: true
+  flyway:
+    user: work
+    password: Start123!
+    url: jdbc:h2:mem:work
+    locations: classpath:sql
 url:
   nbp: http://api.nbp.pl/api/exchangerates/tables/
 cron:

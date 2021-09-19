@@ -49,13 +49,23 @@ public class UserService {
 
     @Transactional
     public ExchangeResponseDto exchange(ExchangeDto exchange) {
-        User user = userRepository.findByPesel(exchange.getPesel()).orElseThrow(() -> new RuntimeException("User not exists in databases"));
-        if(StringUtils.isBlank(exchange.getCurrencyFrom()) || StringUtils.isBlank(exchange.getCurrencyTo()) || Objects.isNull(exchange.getMoney())) {
+        User user = userRepository.findByPesel(exchange.getPesel())
+                .orElseThrow(() -> new RuntimeException("User not exists in databases"));
+
+        if(StringUtils.isBlank(exchange.getCurrencyFrom()) ||
+                StringUtils.isBlank(exchange.getCurrencyTo()) ||
+                Objects.isNull(exchange.getMoney())) {
             throw new RuntimeException("Parameter must be set");
         }
+
+        if(exchange.getMoney().compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("Money can not be on the downside");
+        }
+
         if(exchange.getCurrencyFrom().equalsIgnoreCase(exchange.getCurrencyTo())) {
             throw new RuntimeException("You cannot do that");
         }
+
         Account account = user.getAccount();
         BigDecimal newMoney;
         BigDecimal newMoneyTo;
